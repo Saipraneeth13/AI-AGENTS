@@ -8,10 +8,11 @@ import asyncio
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, Form, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, File, Form, UploadFile, WebSocket, WebSocketDisconnect, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
+from pydantic import BaseModel
 
 from agents.orchestrator import AssessmentOrchestrator
 from utils.pdf_parser import extract_text_from_pdf
@@ -133,6 +134,63 @@ async def get_session_state(session_id: str):
     if not orch:
         return JSONResponse({"error": "Not found"}, status_code=404)
     return orch.state
+
+
+# --- New: HTTP polling endpoints for Vercel (WebSocket fallback) ---
+
+class AnswerPayload(BaseModel):
+    content: str
+
+
+class CodePayload(BaseModel):
+    code: str
+    language: str = "python"
+
+
+@app.get("/api/session/{session_id}/next-question")
+async def http_next_question(session_id: str):
+    orch = sessions.get(session_id)
+    if not orch:
+        return JSONResponse({"error": "Session not found"}, status_code=404)
+    q = await orch.get_next_question()
+    return q or {}
+
+
+@app.post("/api/session/{session_id}/answer")
+async def http_answer(session_id: str, payload: AnswerPayload):
+    orch = sessions.get(session_id)
+    if not orch:
+        return JSONResponse({"error": "Session not found"}, status_code=404)
+    result = await orch.process_answer(payload.content)
+    response = {"evaluation": result}
+    if result.get("assessment_complete"):
+        # Run gap analysis + learning plan (long-running; still run synchronously here)
+        gap_result = await orch.run_gap_analysis()
+        plan_result = await orch.generate_learning_plan()
+        response.update({"gap_analysis": gap_result, "learning_plan": plan_result})
+    else:
+        next_q = await orch.get_next_question()
+        response["next_question"] = next_q
+    return response
+
+
+@app.post("/api/session/{session_id}/skip")
+async def http_skip(session_id: str):
+    orch = sessions.get(session_id)
+    if not orch:
+        return JSONResponse({"error": "Session not found"}, status_code=404)
+    orch.skip_current_skill()
+    next_q = await orch.get_next_question()
+    return {"next_question": next_q}
+
+
+@app.post("/api/session/{session_id}/code-eval")
+async def http_code_eval(session_id: str, payload: CodePayload):
+    orch = sessions.get(session_id)
+    if not orch:
+        return JSONResponse({"error": "Session not found"}, status_code=404)
+    result = await orch.evaluate_code(payload.code, payload.language)
+    return result
 
 
 if __name__ == "__main__":

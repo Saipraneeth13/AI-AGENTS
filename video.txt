@@ -1,0 +1,43 @@
+Video Script: Website Overview — AI Agent for Resume
+
+[0:00] Opening shot: website homepage visible. On-screen text: “AI Agent for Resume”
+Narration:
+Welcome. This demo shows the AI Agent for Resume — a lightweight web tool to generate, review, and improve resumes quickly.
+
+[0:12] Problem statement. Show a messy resume on screen.
+Narration:
+Job seekers often struggle to write clear, achievement-focused resumes. Manual edits are slow and subjective. This website automates suggestions and helps craft concise bullet points tailored to roles.
+
+[0:25] Solution overview. Show homepage features grid.
+Narration:
+The site offers three core features: Generate, Review, and Export. Generate creates resume content from prompts. Review analyzes existing entries and suggests improvements. Export produces clean PDFs or plain text ready to send.
+
+[0:40] Navigation walkthrough. Cursor moves across menu.
+Narration:
+Top navigation includes Home, Generate, Review, and Settings. Click Generate to start a new resume section. Click Review to analyze an uploaded resume.
+
+[0:52] Generate feature demo. Fill a simple form with role, skills, and experience.
+Narration:
+On Generate, enter the role, key skills, and a short summary of past experience. Choose tone — professional, creative, or concise — and press Generate. The AI returns tailored bullets, impact metrics, and suggested keywords for ATS.
+
+[1:15] Show before/after comparison for a sample bullet.
+Narration:
+Example: “Responsible for sales” becomes “Increased regional sales by 28% through targeted client strategies.” The result is measurable and action-oriented.
+
+[1:30] Review feature demo. Upload a resume or paste content.
+Narration:
+In Review, paste an existing resume or upload a file. The reviewer highlights weak bullets, redundancies, and missing keywords. Each suggestion includes rationale and an editable improvement. Accept changes individually or apply them all.
+
+[1:50] Export and integration.
+Narration:
+When satisfied, go to Export. Choose PDF or plain text, customize formatting, and download. Integrations include copy-to-clipboard and a quick share link for recruiter reviews.
+
+[2:05] Settings and customization.
+Narration:
+Settings let users set industry, preferred verbs, and tone presets. Save templates for repeat use.
+
+[2:18] Closing demo: quick recap with call-to-action.
+Narration:
+That’s the AI Agent for Resume — generate polished bullets, get targeted reviews, and export recruiter-ready resumes in minutes. Visit the site, try a demo, and start improving resumes today.
+
+[2:30] End screen: project name, repo link, and on-screen CTA: “Try it now”
