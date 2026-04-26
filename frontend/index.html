@@ -203,7 +203,7 @@ const { useState, useEffect, useRef, useCallback } = React;
 const { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
         BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } = Recharts;
 
-const API = 'http://localhost:8000';
+const API = '%VITE_API_URL%';
 
 /* ─── Utilities ─── */
 function scoreBadge(score) {
@@ -443,9 +443,15 @@ function AssessmentChat({ sessionData, onComplete, onGapAnalysis }) {
     setInput(text);
   });
 
-  // Connect WebSocket
-  useEffect(() => {
-    const ws = new WebSocket(`ws://localhost:8000/ws/${sessionData.session_id}`);
+    // Robust WS URL derivation: handles http->ws, https->wss, and relative paths
+    const getWsUrl = (url) => {
+      if (!url || url.startsWith('/')) {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${protocol}//${window.location.host}${url || ''}`;
+      }
+      return url.replace(/^http/, 'ws');
+    };
+    const ws = new WebSocket(`${getWsUrl(API)}/ws/${sessionData.session_id}`);
     wsRef.current = ws;
     ws.onopen = () => setWsState('open');
     ws.onerror = () => setWsState('error');

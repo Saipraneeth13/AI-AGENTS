@@ -88,11 +88,10 @@ export default function AssessmentPage() {
                 return (
                   <div key={index} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
                     <div
-                      className={`max-w-[84%] rounded-3xl border px-4 py-3 text-sm ${
-                        isUser
+                      className={`max-w-[84%] rounded-3xl border px-4 py-3 text-sm ${isUser
                           ? 'bg-slate-700 text-slate-100 border-slate-600 rounded-br-none'
                           : 'bg-slate-800 text-slate-100 border-slate-700 rounded-bl-none'
-                      }`}
+                        }`}
                       role="article"
                       aria-label={isUser ? 'Your message' : 'Agent response'}
                     >
@@ -168,9 +167,9 @@ export default function AssessmentPage() {
   );
 }
 
-            <span>Finish</span>
-          </button>
-        </div>
+<span>Finish</span>
+          </button >
+        </div >
         
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((msg, idx) => (
@@ -206,10 +205,10 @@ export default function AssessmentPage() {
             </button>
           </div>
         </div>
-      </div>
+      </div >
 
-      {/* Code Editor Section */}
-      <div className="flex-1 flex flex-col bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden shadow-xl hidden md:flex">
+  {/* Code Editor Section */ }
+  < div className = "flex-1 flex flex-col bg-slate-800/50 border border-slate-700 rounded-2xl overflow-hidden shadow-xl hidden md:flex" >
         <div className="p-4 border-b border-slate-700 bg-slate-800 flex justify-between items-center">
           <h2 className="font-semibold text-slate-300">Code Workspace</h2>
           <button className="text-sm bg-green-600/20 text-green-400 hover:bg-green-600/30 px-3 py-1 rounded-lg flex items-center space-x-1 transition-colors">
@@ -232,7 +231,7 @@ export default function AssessmentPage() {
             }}
           />
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
