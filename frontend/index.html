@@ -198,7 +198,7 @@
 </head>
 <body>
 <div id="root"></div>
-<script type="text/babel">
+<script type="text/babel" data-presets="env,react">
 const { useState, useEffect, useRef, useCallback } = React;
 const { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
         BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } = Recharts;
@@ -442,27 +442,6 @@ function AssessmentChat({ sessionData, onComplete, onGapAnalysis }) {
   const { recording, start: startRec, stop: stopRec, speak } = useVoice(text => {
     setInput(text);
   });
-
-    // Robust WS URL derivation: handles http->ws, https->wss, and relative paths
-    const getWsUrl = (url) => {
-      if (!url || url.startsWith('/')) {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        return `${protocol}//${window.location.host}${url || ''}`;
-      }
-      return url.replace(/^http/, 'ws');
-    };
-    const ws = new WebSocket(`${getWsUrl(API)}/ws/${sessionData.session_id}`);
-    wsRef.current = ws;
-    ws.onopen = () => setWsState('open');
-    ws.onerror = () => setWsState('error');
-    ws.onclose = () => setWsState('closed');
-    ws.onmessage = ({ data }) => {
-      const msg = JSON.parse(data);
-      handleServerMessage(msg);
-    };
-    return () => ws.close();
-  }, []);
-
   const handleServerMessage = useCallback((msg) => {
     if (msg.type === 'question') {
       setCurrentQ(msg);
@@ -499,6 +478,27 @@ function AssessmentChat({ sessionData, onComplete, onGapAnalysis }) {
       addMessage('agent', `Error: ${msg.message}`, '⚠️ System', null);
     }
   }, [speak]);
+
+  useEffect(() => {
+    // Robust WS URL derivation: handles http->ws, https->wss, and relative paths
+    const getWsUrl = (url) => {
+      if (!url || url.startsWith('/')) {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${protocol}//${window.location.host}${url || ''}`;
+      }
+      return url.replace(/^http/, 'ws');
+    };
+    const ws = new WebSocket(`${getWsUrl(API)}/ws/${sessionData.session_id}`);
+    wsRef.current = ws;
+    ws.onopen = () => setWsState('open');
+    ws.onerror = () => setWsState('error');
+    ws.onclose = () => setWsState('closed');
+    ws.onmessage = ({ data }) => {
+      const msg = JSON.parse(data);
+      handleServerMessage(msg);
+    };
+    return () => ws.close();
+  }, [handleServerMessage, sessionData.session_id]);
 
   function addMessage(role, text, label, raw) {
     setMessages(m => [...m, { role, text, label, raw, id: Date.now() + Math.random() }]);
