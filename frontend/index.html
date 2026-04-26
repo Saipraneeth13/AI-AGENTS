@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SkillSense — AI Assessment Agent</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prop-types/15.8.1/prop-types.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.js"></script>
+<!-- Monaco Editor -->
+<script>var require = { paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } };</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #0d0d14;
+    --ink2: #3a3a4a;
+    --ink3: #787888;
+    --bg: #f5f4f0;
+    --bg2: #eceae3;
+    --bg3: #ffffff;
+    --accent: #5b4cf5;
+    --accent2: #7b6ff7;
+    --accent-bg: #ede9ff;
+    --green: #1a9e6e;
+    --green-bg: #e2f5ec;
+    --amber: #d97706;
+    --amber-bg: #fef3c7;
+    --red: #dc2626;
+    --red-bg: #fee2e2;
+    --border: rgba(0,0,0,0.08);
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  html, body, #root { height: 100%; background: var(--bg); color: var(--ink); font-family: 'DM Sans', sans-serif; }
+  
+  /* Layout */
+  .app { min-height: 100vh; display: flex; flex-direction: column; }
+  .header { background: var(--bg3); border-bottom: 1px solid var(--border); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--accent); letter-spacing: -0.5px; }
+  .logo span { color: var(--ink); }
+  .main { flex: 1; padding: 32px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+  /* Cards */
+  .card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
+  .card + .card { margin-top: 20px; }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  .card-sub { font-size: 13px; color: var(--ink3); margin-bottom: 20px; }
+
+  /* Upload zone */
+  .upload-zone { display: block; border: 2px dashed var(--border); border-radius: var(--radius-sm); padding: 32px; text-align: center; cursor: pointer; transition: all .2s; background: var(--bg); }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: var(--accent-bg); }
+  .upload-zone input { display: none; }
+  .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-label { font-size: 14px; color: var(--ink2); }
+  .upload-label strong { color: var(--accent); cursor: pointer; }
+  .file-name { font-size: 13px; color: var(--green); font-weight: 500; margin-top: 8px; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; border-radius: 100px; border: none; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(91,76,245,0.3); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .btn-ghost { background: transparent; color: var(--ink2); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg2); }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-danger { background: var(--red-bg); color: var(--red); }
+
+  /* Textarea */
+  .textarea { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; font-family: inherit; font-size: 14px; color: var(--ink); background: var(--bg); resize: vertical; min-height: 120px; outline: none; transition: border-color .2s; }
+  .textarea:focus { border-color: var(--accent); background: var(--bg3); }
+
+  /* Progress bar */
+  .progress-bar { height: 6px; background: var(--bg2); border-radius: 100px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 100px; transition: width .5s; }
+
+  /* Chat bubble */
+  .chat-area { display: flex; flex-direction: column; gap: 16px; max-height: 480px; overflow-y: auto; padding: 4px 0; scroll-behavior: smooth; }
+  .bubble { display: flex; gap: 12px; animation: fadeUp .3s ease; }
+  .bubble.agent { flex-direction: row; }
+  .bubble.user { flex-direction: row-reverse; }
+  .bubble-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .bubble.agent .bubble-avatar { background: var(--accent-bg); }
+  .bubble.user .bubble-avatar { background: var(--green-bg); }
+  .bubble-body { max-width: 72%; }
+  .bubble-meta { font-size: 11px; color: var(--ink3); margin-bottom: 4px; }
+  .bubble.user .bubble-meta { text-align: right; }
+  .bubble-text { background: var(--bg2); padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .bubble.agent .bubble-text { border-top-left-radius: 4px; }
+  .bubble.user .bubble-text { background: var(--accent); color: #fff; border-top-right-radius: 4px; }
+  .code-block { font-family: var(--mono); font-size: 12.5px; background: #1e1e2e; color: #cdd6f4; padding: 14px; border-radius: var(--radius-sm); margin-top: 8px; white-space: pre; overflow-x: auto; }
+
+  /* Input row */
+  .input-row { display: flex; gap: 10px; align-items: flex-end; margin-top: 16px; }
+  .input-row textarea { flex: 1; border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; font-family: inherit; font-size: 14px; resize: none; outline: none; background: var(--bg); min-height: 48px; max-height: 140px; transition: border-color .2s; }
+  .input-row textarea:focus { border-color: var(--accent); background: var(--bg3); }
+  .voice-btn { width: 48px; height: 48px; border-radius: 50%; border: none; background: var(--bg2); cursor: pointer; font-size: 20px; transition: all .2s; flex-shrink: 0; }
+  .voice-btn.recording { background: var(--red-bg); animation: pulse 1s infinite; }
+  .voice-btn:hover { background: var(--accent-bg); }
+
+  /* Score badge */
+  .score-badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 100px; font-size: 12px; font-weight: 600; }
+  .score-high { background: var(--green-bg); color: var(--green); }
+  .score-mid { background: var(--amber-bg); color: var(--amber); }
+  .score-low { background: var(--red-bg); color: var(--red); }
+
+  /* Skill pill */
+  .skill-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 500; border: 1px solid; cursor: pointer; transition: all .2s; }
+  .skill-pill:hover { transform: translateY(-1px); }
+  .skill-tech { background: var(--accent-bg); color: var(--accent); border-color: rgba(91,76,245,.2); }
+  .skill-soft { background: var(--green-bg); color: var(--green); border-color: rgba(26,158,110,.2); }
+  .skill-done { opacity: .5; text-decoration: line-through; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  /* Monaco */
+  #monaco-editor { height: 260px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+
+  /* Learning plan */
+  .phase-block { border-left: 3px solid var(--accent); padding-left: 20px; margin-bottom: 28px; }
+  .phase-header { font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: 6px; }
+  .phase-meta { font-size: 12px; color: var(--ink3); margin-bottom: 14px; }
+  .week-block { background: var(--bg); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 10px; border: 1px solid var(--border); }
+  .week-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+  .resource-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .resource-item:last-child { border-bottom: none; }
+  .resource-type { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 100px; text-transform: uppercase; letter-spacing: .5px; }
+  .type-course { background: var(--accent-bg); color: var(--accent); }
+  .type-video { background: var(--red-bg); color: var(--red); }
+  .type-book { background: var(--amber-bg); color: var(--amber); }
+  .type-project { background: var(--green-bg); color: var(--green); }
+  .type-article { background: var(--bg2); color: var(--ink2); }
+  .type-documentation { background: var(--bg2); color: var(--ink2); }
+  .free-tag { font-size: 10px; color: var(--green); font-weight: 600; }
+  .paid-tag { font-size: 10px; color: var(--amber); font-weight: 600; }
+
+  /* Radar chart container */
+  .chart-wrap { display: flex; justify-content: center; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; background: var(--bg2); padding: 4px; border-radius: 10px; margin-bottom: 20px; }
+  .tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; font-weight: 500; border-radius: 7px; cursor: pointer; color: var(--ink3); border: none; background: transparent; font-family: inherit; transition: all .2s; }
+  .tab.active { background: var(--bg3); color: var(--accent); box-shadow: var(--shadow); }
+
+  /* Stat card */
+  .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; text-align: center; }
+  .stat-num { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--ink3); margin-top: 4px; }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,.4); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
+
+  /* Tag */
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+  .tag-must { background: var(--red-bg); color: var(--red); }
+  .tag-nice { background: var(--amber-bg); color: var(--amber); }
+  .tag-agent { background: var(--accent-bg); color: var(--accent); font-size: 10px; padding: 2px 8px; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* Alert */
+  .alert { padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; }
+  .alert-info { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(91,76,245,.2); }
+  .alert-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(26,158,110,.2); }
+
+  /* Gap table */
+  .gap-bar-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .gap-bar-label { width: 120px; font-size: 13px; font-weight: 500; flex-shrink: 0; }
+  .gap-bar-track { flex: 1; height: 10px; background: var(--bg2); border-radius: 100px; overflow: hidden; }
+  .gap-bar-fill { height: 100%; border-radius: 100px; transition: width 1s; }
+
+  /* Stepper */
+  .stepper { display: flex; gap: 8px; margin-bottom: 24px; }
+  .step-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bg2); transition: background .3s; }
+  .step-dot.done { background: var(--green); }
+  .step-dot.active { background: var(--accent); }
+
+  @media (max-width: 700px) {
+    .main { padding: 16px; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+const { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
+        BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } = Recharts;
+
+const API = 'http://localhost:8000';
+
+/* ─── Utilities ─── */
+function scoreBadge(score) {
+  const cls = score >= 70 ? 'score-high' : score >= 45 ? 'score-mid' : 'score-low';
+  const label = score >= 70 ? '✓ Strong' : score >= 45 ? '~ Fair' : '✗ Gap';
+  return <span className={`score-badge ${cls}`}>{label} {score}/100</span>;
+}
+function resourceTypeClass(t) {
+  return 'type-' + (t || 'article').toLowerCase().replace(/\s+/g, '');
+}
+function gapColor(severity) {
+  return { none: '#1a9e6e', minor: '#16a34a', moderate: '#d97706',
+           significant: '#dc2626', critical: '#7f1d1d' }[severity] || '#888';
+}
+
+/* ─── Voice hook ─── */
+function useVoice(onResult) {
+  const [recording, setRecording] = useState(false);
+  const recRef = useRef(null);
+
+  const start = useCallback((initialText = '') => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return alert('Speech Recognition not supported in this browser. Use Chrome.');
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = 'en-US';
+    
+    let finalTranscript = '';
+
+    rec.onresult = e => {
+      let interimTranscript = '';
+      for (let i = e.resultIndex; i < e.results.length; ++i) {
+        if (e.results[i].isFinal) {
+          finalTranscript += e.results[i][0].transcript;
+        } else {
+          interimTranscript += e.results[i][0].transcript;
+        }
+      }
+      const newText = (finalTranscript + ' ' + interimTranscript).trim();
+      onResult(initialText && typeof initialText === 'string' ? (initialText + ' ' + newText).trim() : newText);
+    };
+    rec.onerror = () => setRecording(false);
+    rec.onend = () => setRecording(false);
+    rec.start();
+    recRef.current = rec;
+    setRecording(true);
+  }, [onResult]);
+
+  const stop = useCallback(() => {
+    recRef.current?.stop();
+    setRecording(false);
+  }, []);
+
+  const speak = useCallback((text) => {
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.rate = 0.95;
+    utt.pitch = 1;
+    window.speechSynthesis.speak(utt);
+  }, []);
+
+  return { recording, start, stop, speak };
+}
+
+/* ─── Monaco Editor component ─── */
+function MonacoEditor({ language, onCodeChange }) {
+  const containerRef = useRef(null);
+  const editorRef = useRef(null);
+
+  useEffect(() => {
+    require(['vs/editor/editor.main'], () => {
+      if (editorRef.current) return;
+      editorRef.current = monaco.editor.create(containerRef.current, {
+        value: language === 'python' 
+          ? '# Write your solution here\ndef solution():\n    pass\n'
+          : '// Write your solution here\nfunction solution() {\n  \n}\n',
+        language: language || 'python',
+        theme: 'vs-dark',
+        fontSize: 13,
+        minimap: { enabled: false },
+        lineNumbers: 'on',
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        padding: { top: 12 },
+      });
+      editorRef.current.onDidChangeModelContent(() => {
+        onCodeChange(editorRef.current.getValue());
+      });
+    });
+    return () => { editorRef.current?.dispose(); editorRef.current = null; };
+  }, []);
+
+  useEffect(() => {
+    if (editorRef.current && window.monaco) {
+      monaco.editor.setModelLanguage(editorRef.current.getModel(), language || 'python');
+    }
+  }, [language]);
+
+  return <div id="monaco-editor" ref={containerRef} style={{ height: '100%', minHeight: '320px' }} />;
+}
+
+/* ─── Upload step ─── */
+function UploadStep({ onStart }) {
+  const [jdText, setJdText] = useState('');
+  const [jdFile, setJdFile] = useState(null);
+  const [resumeFile, setResumeFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [dragResume, setDragResume] = useState(false);
+
+  const handleStart = async () => {
+    if (!resumeFile || !jdText.trim() && !jdFile) return;
+    setLoading(true);
+    const fd = new FormData();
+    fd.append('resume_file', resumeFile);
+    if (jdFile) fd.append('jd_file', jdFile);
+    fd.append('jd_text', jdText);
+    try {
+      const res = await fetch(`${API}/api/start-session`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.session_id) onStart(data);
+      else alert(data.error || 'Failed to start session');
+    } catch {
+      alert('Cannot reach backend. Make sure the Python server is running on :8000');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ maxWidth: 640, margin: '40px auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 36, color: 'var(--accent)', marginBottom: 8 }}>
+          Skill<span style={{ color: 'var(--ink)' }}>Sense</span>
+        </div>
+        <p style={{ color: 'var(--ink3)', fontSize: 15 }}>
+          AI-powered skill assessment & personalised learning plans
+        </p>
+      </div>
+
+      <div className="card">
+        <div className="card-title">Job Description</div>
+        <div className="card-sub">Paste the JD or upload a PDF</div>
+        <textarea className="textarea" placeholder="Paste job description here…" rows={5}
+          value={jdText} onChange={e => setJdText(e.target.value)} />
+        <div style={{ margin: '10px 0', textAlign: 'center', color: 'var(--ink3)', fontSize: 13 }}>— or —</div>
+        <label className="upload-zone" style={{ padding: '16px' }}>
+          <input type="file" accept=".pdf" onChange={e => setJdFile(e.target.files[0])} />
+          <div className="upload-icon">📄</div>
+          <div className="upload-label">Upload JD <strong>PDF</strong></div>
+          {jdFile && <div className="file-name">✓ {jdFile.name}</div>}
+        </label>
+      </div>
+
+      <div className="card">
+        <div className="card-title">Candidate Resume</div>
+        <div className="card-sub">Upload resume PDF to auto-extract skills</div>
+        <label 
+          className={`upload-zone ${dragResume ? 'drag' : ''}`}
+          onDragOver={e => { e.preventDefault(); setDragResume(true); }}
+          onDragLeave={() => setDragResume(false)}
+          onDrop={e => { e.preventDefault(); setDragResume(false); setResumeFile(e.dataTransfer.files[0]); }}
+        >
+          <input type="file" accept=".pdf" onChange={e => setResumeFile(e.target.files[0])} />
+          <div className="upload-icon">📋</div>
+          <div className="upload-label">Drag & drop or <strong>click to upload</strong></div>
+          <div style={{ fontSize: 12, color: 'var(--ink3)', marginTop: 4 }}>PDF only</div>
+          {resumeFile && <div className="file-name">✓ {resumeFile.name}</div>}
+        </label>
+      </div>
+
+      <div style={{ textAlign: 'center', marginTop: 20 }}>
+        <button className="btn btn-primary" style={{ fontSize: 15, padding: '13px 36px' }}
+          onClick={handleStart} disabled={loading || !resumeFile || (!jdText.trim() && !jdFile)}>
+          {loading ? <><div className="spinner" /> Parsing documents…</> : '🚀 Start Assessment'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Overview panel ─── */
+function OverviewPanel({ sessionData }) {
+  return (
+    <div className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, marginBottom: 4 }}>
+            {sessionData.candidate_name}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--ink3)' }}>{sessionData.jd_summary}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 12, color: 'var(--ink3)' }}>Skills to assess</div>
+          <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 28, color: 'var(--accent)' }}>
+            {sessionData.skills_to_assess?.length || 0}
+          </div>
+        </div>
+      </div>
+      <hr className="divider" />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {sessionData.skills_to_assess?.map((s, i) => (
+          <span key={i} className="skill-pill skill-tech">{s}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Assessment chat ─── */
+function AssessmentChat({ sessionData, onComplete, onGapAnalysis }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [currentQ, setCurrentQ] = useState(null);
+  const [progress, setProgress] = useState({ percent: 0 });
+  const [wsState, setWsState] = useState('connecting');
+  const [showCode, setShowCode] = useState(false);
+  const [codeValue, setCodeValue] = useState('');
+  const [statusMsg, setStatusMsg] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('python');
+  const wsRef = useRef(null);
+  const chatRef = useRef(null);
+  const textRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  // Debounced auto-save for code
+  useEffect(() => {
+    if (!showCode || !codeValue) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (wsRef.current?.readyState === 1) {
+        wsRef.current.send(JSON.stringify({ type: 'code_buffer', code: codeValue, language: selectedLanguage }));
+      }
+    }, 1500);
+  }, [codeValue, showCode, selectedLanguage]);
+
+  const { recording, start: startRec, stop: stopRec, speak } = useVoice(text => {
+    setInput(text);
+  });
+
+  // Connect WebSocket
+  useEffect(() => {
+    const ws = new WebSocket(`ws://localhost:8000/ws/${sessionData.session_id}`);
+    wsRef.current = ws;
+    ws.onopen = () => setWsState('open');
+    ws.onerror = () => setWsState('error');
+    ws.onclose = () => setWsState('closed');
+    ws.onmessage = ({ data }) => {
+      const msg = JSON.parse(data);
+      handleServerMessage(msg);
+    };
+    return () => ws.close();
+  }, []);
+
+  const handleServerMessage = useCallback((msg) => {
+    if (msg.type === 'question') {
+      setCurrentQ(msg);
+      setProgress(msg.progress || {});
+      setShowCode(msg.type === 'code' || !!msg.code_prompt);
+      if (msg.language) setSelectedLanguage(msg.language);
+      const agentLabel = msg.agent === 'HR' ? '🧑💼 HR Agent' : '🔧 Technical Agent';
+      
+      const actualQuestion = msg.question || (msg.response && msg.response.question) || (msg.data && msg.data.question) || msg.content || msg.text || "Could you tell me more about that?";
+      const questionText = msg.code_prompt 
+        ? `${actualQuestion}\n\n\`\`\`${msg.language || ''}\n${msg.code_prompt}\n\`\`\``
+        : actualQuestion;
+        
+      addMessage('agent', questionText, agentLabel, msg);
+      if (actualQuestion) {
+        speak(actualQuestion);
+      }
+    } else if (msg.type === 'evaluation' || msg.type === 'code_evaluation') {
+      const feedbackText = msg.feedback || (msg.response && msg.response.feedback) || (msg.data && msg.data.feedback) || "Evaluation received.";
+      addMessage('agent', `**Feedback:** ${feedbackText}`, '📊 Evaluation', msg);
+      if (msg.assessment_complete) {
+        setStatusMsg('Assessment complete! Analysing gaps…');
+      }
+    } else if (msg.type === 'status') {
+      setStatusMsg(msg.message);
+    } else if (msg.type === 'gap_analysis') {
+      setStatusMsg('');
+      onGapAnalysis(msg);
+      addMessage('agent', '✅ Gap analysis complete. Generating your learning plan…', '📊 System', null);
+    } else if (msg.type === 'learning_plan') {
+      setStatusMsg('');
+      onComplete(msg);
+    } else if (msg.type === 'error') {
+      addMessage('agent', `Error: ${msg.message}`, '⚠️ System', null);
+    }
+  }, [speak]);
+
+  function addMessage(role, text, label, raw) {
+    setMessages(m => [...m, { role, text, label, raw, id: Date.now() + Math.random() }]);
+    setTimeout(() => {
+      chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' });
+    }, 80);
+  }
+
+  function sendAnswer() {
+    const text = input.trim();
+    if (!text || wsRef.current?.readyState !== 1) return;
+    addMessage('user', text, 'You', null);
+    if (showCode && codeValue.trim()) {
+      wsRef.current.send(JSON.stringify({ type: 'code_submission', code: codeValue, language: selectedLanguage }));
+    }
+    wsRef.current.send(JSON.stringify({ type: 'answer', content: text }));
+    setInput('');
+    setShowCode(false);
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAnswer(); }
+  }
+
+  function skipSkill() {
+    wsRef.current?.send(JSON.stringify({ type: 'skip' }));
+    addMessage('user', '(Skipped)', 'You', null);
+  }
+
+  return (
+    <div>
+      <OverviewPanel sessionData={sessionData} />
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>Assessment in progress</span>
+            {currentQ && (
+              <span className="tag tag-agent" style={{ marginLeft: 8 }}>
+                {currentQ.skill}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', align: 'center', gap: 8 }}>
+            <span style={{ fontSize: 12, color: 'var(--ink3)' }}>{progress.percent || 0}%</span>
+            {wsState === 'error' && <span style={{ color: 'var(--red)', fontSize: 12 }}>Connection lost</span>}
+          </div>
+        </div>
+        <div className="progress-bar" style={{ marginBottom: 20 }}>
+          <div className="progress-fill" style={{ width: `${progress.percent || 0}%` }} />
+        </div>
+
+        {statusMsg && (
+          <div className="alert alert-info" style={{ marginBottom: 12 }}>
+            <div className="spinner" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 8 }} />
+            {statusMsg}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'stretch' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="chat-area" ref={chatRef} style={{ maxHeight: showCode ? '350px' : '480px' }}>
+              {messages.length === 0 && wsState === 'connecting' && (
+                <div style={{ textAlign: 'center', color: 'var(--ink3)', padding: 40 }}>
+                  <div className="spinner" style={{ margin: '0 auto 12px' }} />
+                  Connecting to assessment engine…
+                </div>
+              )}
+              {messages.map(m => (
+                <div key={m.id} className={`bubble ${m.role}`}>
+                  <div className="bubble-avatar">{m.role === 'agent' ? '🤖' : '👤'}</div>
+                  <div className="bubble-body">
+                    <div className="bubble-meta">{m.label}</div>
+                    <div className="bubble-text">
+                      {(m.text || '').split('```').map((part, i) => 
+                        i % 2 === 0 
+                          ? <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part.replace(/\*\*(.*?)\*\*/g, '$1')}</span>
+                          : <div key={i} className="code-block">{part.replace(/^[a-z]+\n/, '')}</div>
+                      )}
+                    </div>
+                    {m.raw?.score !== undefined && (
+                      <div style={{ marginTop: 6 }}>{scoreBadge(m.raw.score)}</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {showCode && currentQ?.code_prompt && (
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>📝 Code Editor</span>
+                <select 
+                  value={selectedLanguage} 
+                  onChange={e => setSelectedLanguage(e.target.value)}
+                  style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: 12, outline: 'none', background: 'var(--bg3)', fontFamily: 'inherit' }}
+                >
+                  <option value="python">Python</option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="java">Java</option>
+                  <option value="cpp">C++</option>
+                  <option value="csharp">C#</option>
+                  <option value="typescript">TypeScript</option>
+                  <option value="go">Go</option>
+                  <option value="rust">Rust</option>
+                  <option value="ruby">Ruby</option>
+                  <option value="php">PHP</option>
+                </select>
+              </div>
+              <div style={{ flex: 1, minHeight: '320px' }}>
+                <MonacoEditor language={selectedLanguage} onCodeChange={setCodeValue} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="input-row" style={{ marginTop: 16 }}>
+          <textarea
+            ref={textRef}
+            placeholder="Type your answer… (Enter to send)"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKey}
+            rows={2}
+          />
+          <button className={`voice-btn ${recording ? 'recording' : ''}`}
+            onClick={recording ? stopRec : () => startRec(input)}
+            title={recording ? 'Stop recording' : 'Voice input'}>
+            {recording ? '🔴' : '🎙️'}
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={sendAnswer} disabled={!input.trim()}>
+            Send
+          </button>
+          <button className="btn btn-ghost btn-sm" onClick={skipSkill} title="Skip this skill">
+            Skip
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Results dashboard ─── */
+function ResultsDashboard({ sessionData, gapData, learningPlan }) {
+  const [tab, setTab] = useState('overview');
+
+  const skillScores = gapData?.skill_scores || [];
+  const radarData = skillScores.map(s => ({
+    skill: s.skill?.length > 12 ? s.skill.slice(0, 12) + '…' : s.skill,
+    score: s.assessed_score || 0,
+    required: 80,
+  }));
+
+  return (
+    <div>
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 26 }}>Assessment Complete</div>
+            <div style={{ color: 'var(--ink3)', fontSize: 13, marginTop: 4 }}>
+              {sessionData.candidate_name} · {new Date().toLocaleDateString()}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div className="stat-card" style={{ minWidth: 90, padding: '12px' }}>
+              <div className="stat-num" style={{ fontSize: 28 }}>{gapData?.overall_technical_score || 0}</div>
+              <div className="stat-label">Tech Score</div>
+            </div>
+            <div className="stat-card" style={{ minWidth: 90, padding: '12px' }}>
+              <div className="stat-num" style={{ fontSize: 28 }}>{gapData?.overall_communication_score || 0}</div>
+              <div className="stat-label">Comm Score</div>
+            </div>
+            <div className="stat-card" style={{ minWidth: 110, border: '1px solid var(--accent)', padding: '12px', background: 'var(--accent-bg)' }}>
+              <div className="stat-num" style={{ color: 'var(--accent)', fontSize: 28 }}>{gapData?.overall_readiness_score || 0}</div>
+              <div className="stat-label" style={{ fontWeight: 600, color: 'var(--accent)' }}>Overall</div>
+            </div>
+          </div>
+        </div>
+        {gapData?.strategic_recommendation && (
+          <div className="alert alert-info" style={{ marginTop: 16 }}>
+            💡 {gapData.strategic_recommendation}
+          </div>
+        )}
+      </div>
+
+      <div className="tabs" style={{ marginTop: 20 }}>
+        {['overview', 'gaps', 'plan'].map(t => (
+          <button key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+            {{ overview: '📊 Overview', gaps: '🔍 Gap Analysis', plan: '📚 Learning Plan' }[t]}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'overview' && (
+        <div>
+          <div className="grid-3" style={{ marginBottom: 20 }}>
+            <div className="stat-card">
+              <div className="stat-num">{skillScores.filter(s => s.gap_severity === 'none' || s.gap_severity === 'minor').length}</div>
+              <div className="stat-label">Skills on target</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-num">{gapData?.critical_gaps?.length || 0}</div>
+              <div className="stat-label">Critical gaps</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-num">{learningPlan?.total_duration_weeks || 12}</div>
+              <div className="stat-label">Weeks to close gaps</div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-title">Skill Radar</div>
+            <div className="chart-wrap">
+              <ResponsiveContainer width={400} height={300}>
+                <RadarChart data={radarData}>
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="skill" tick={{ fontSize: 11 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
+                  <Radar name="Score" dataKey="score" stroke="#5b4cf5" fill="#5b4cf5" fillOpacity={0.3} />
+                  <Radar name="Required" dataKey="required" stroke="#1a9e6e" fill="transparent" strokeDasharray="4 2" />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="grid-2" style={{ marginTop: 20 }}>
+            {gapData?.strength_areas?.length > 0 && (
+              <div className="card">
+                <div className="card-title">💪 Strengths</div>
+                {gapData.strength_areas.map((s, i) => (
+                  <div key={i} style={{ padding: '6px 0', fontSize: 14, color: 'var(--green)' }}>✓ {s}</div>
+                ))}
+              </div>
+            )}
+            {gapData?.critical_gaps?.length > 0 && (
+              <div className="card">
+                <div className="card-title">⚠️ Critical Gaps</div>
+                {gapData.critical_gaps.map((s, i) => (
+                  <div key={i} style={{ padding: '6px 0', fontSize: 14, color: 'var(--red)' }}>✗ {s}</div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid-2" style={{ marginTop: 20 }}>
+            {gapData?.qa_strengths_summary && (
+              <div className="card" style={{ background: 'var(--green-bg)', borderColor: 'rgba(26,158,110,.2)' }}>
+                <div className="card-title" style={{ color: 'var(--green)' }}>🗣️ Interview Strengths</div>
+                <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--ink)' }}>{gapData.qa_strengths_summary}</div>
+              </div>
+            )}
+            {gapData?.qa_weaknesses_summary && (
+              <div className="card" style={{ background: 'var(--red-bg)', borderColor: 'rgba(220,38,38,.2)' }}>
+                <div className="card-title" style={{ color: 'var(--red)' }}>🗣️ Interview Weaknesses</div>
+                <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--ink)' }}>{gapData.qa_weaknesses_summary}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === 'gaps' && (
+        <div className="card">
+          <div className="card-title">Skill Gap Analysis</div>
+          <div className="card-sub">Required vs assessed proficiency per skill</div>
+          {skillScores.map((s, i) => (
+            <div key={i} className="gap-bar-row">
+              <div className="gap-bar-label">{s.skill}</div>
+              <div className="gap-bar-track">
+                <div className="gap-bar-fill" style={{
+                  width: `${s.assessed_score || 0}%`,
+                  background: gapColor(s.gap_severity),
+                }} />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, minWidth: 32, color: gapColor(s.gap_severity) }}>
+                {s.assessed_score || 0}
+              </span>
+              <span style={{
+                fontSize: 11, padding: '2px 8px', borderRadius: 100, background: 'var(--bg2)',
+                color: 'var(--ink2)', minWidth: 80, textAlign: 'center'
+              }}>
+                {s.gap_severity || 'unknown'}
+              </span>
+              {s.time_to_close_weeks && (
+                <span style={{ fontSize: 11, color: 'var(--ink3)', minWidth: 60 }}>
+                  ~{s.time_to_close_weeks}w
+                </span>
+              )}
+            </div>
+          ))}
+          {gapData?.missing_skills_from_jd?.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div className="card-title" style={{ marginBottom: 8, color: 'var(--red)' }}>🚫 Completely Missing JD Skills</div>
+              {gapData.missing_skills_from_jd.map((w, i) => (
+                <div key={i} className="alert alert-info" style={{ marginBottom: 6, background: 'var(--red-bg)', color: 'var(--red)', borderColor: 'rgba(220,38,38,.2)' }}>
+                  {w}
+                </div>
+              ))}
+            </div>
+          )}
+          {gapData?.quick_wins?.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div className="card-title" style={{ marginBottom: 8 }}>⚡ Quick Wins</div>
+              {gapData.quick_wins.map((w, i) => (
+                <div key={i} className="alert alert-success" style={{ marginBottom: 6 }}>
+                  {w}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'plan' && learningPlan && (
+        <div className="card">
+          <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: 22, marginBottom: 4 }}>
+            {learningPlan.plan_title}
+          </div>
+          <div style={{ color: 'var(--ink3)', fontSize: 13, marginBottom: 20 }}>
+            {learningPlan.total_duration_weeks} weeks · {learningPlan.time_commitment_hours_per_week}h/week
+          </div>
+
+          {learningPlan.learning_phases?.map((phase, pi) => (
+            <div key={pi} className="phase-block">
+              <div className="phase-header">Phase {phase.phase}: {phase.title}</div>
+              <div className="phase-meta">{phase.duration_weeks} weeks · {phase.focus_skills?.join(', ')}</div>
+
+              {phase.weekly_breakdown?.map((week, wi) => (
+                <div key={wi} className="week-block">
+                  <div className="week-title">Week {week.week}: {week.theme}</div>
+                  {week.goals?.length > 0 && (
+                    <div style={{ fontSize: 12, color: 'var(--ink3)', marginBottom: 10 }}>
+                      Goals: {week.goals.join(' · ')}
+                    </div>
+                  )}
+                  {week.resources?.map((r, ri) => (
+                    <div key={ri} className="resource-item">
+                      <span className={`resource-type ${resourceTypeClass(r.type)}`}>{r.type}</span>
+                      <span style={{ flex: 1 }}>{r.url 
+                        ? <a href={r.url} target="_blank" rel="noopener" style={{ color: 'var(--accent)', textDecoration: 'none' }}>{r.title}</a>
+                        : r.title}
+                      </span>
+                      <span style={{ color: 'var(--ink3)', fontSize: 11 }}>{r.provider}</span>
+                      <span style={{ fontSize: 11 }}>{r.time_hours}h</span>
+                      <span className={r.free ? 'free-tag' : 'paid-tag'}>{r.free ? 'FREE' : 'PAID'}</span>
+                    </div>
+                  ))}
+                  {week.milestone && (
+                    <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--accent-bg)', borderRadius: 6, fontSize: 12, color: 'var(--accent)' }}>
+                      🎯 Milestone: {week.milestone}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {learningPlan.capstone_project && (
+            <div style={{ background: 'var(--accent-bg)', borderRadius: 'var(--radius-sm)', padding: 20, marginTop: 8 }}>
+              <div style={{ fontWeight: 600, color: 'var(--accent)', marginBottom: 6 }}>
+                🏆 Capstone: {learningPlan.capstone_project.title}
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--ink2)' }}>{learningPlan.capstone_project.description}</div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── App shell ─── */
+function App() {
+  const [phase, setPhase] = useState('upload');   // upload | assessing | results
+  const [sessionData, setSessionData] = useState(null);
+  const [gapData, setGapData] = useState(null);
+  const [learningPlan, setLearningPlan] = useState(null);
+
+  function handleStart(data) {
+    setSessionData(data);
+    setPhase('assessing');
+  }
+
+  function handleComplete(plan) {
+    setLearningPlan(plan);
+    // gap data should already be set via onGapAnalysis
+    setPhase('results');
+  }
+
+  return (
+    <div className="app">
+      <header className="header">
+        <div className="logo">Skill<span>Sense</span></div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {phase !== 'upload' && (
+            <span style={{ fontSize: 12, color: 'var(--ink3)' }}>
+              Session: {sessionData?.session_id?.slice(0, 8)}
+            </span>
+          )}
+          {phase === 'results' && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setPhase('upload')}>
+              New Assessment
+            </button>
+          )}
+        </div>
+      </header>
+
+      <main className="main">
+        {phase === 'upload' && <UploadStep onStart={handleStart} />}
+        {phase === 'assessing' && (
+          <AssessmentChat
+            sessionData={sessionData}
+            onGapAnalysis={(gap) => setGapData(gap)}
+            onComplete={(plan) => { setLearningPlan(plan); setPhase('results'); }}
+          />
+        )}
+        {phase === 'results' && (
+          <ResultsDashboard
+            sessionData={sessionData}
+            gapData={gapData || {}}
+            learningPlan={learningPlan}
+          />
+        )}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
